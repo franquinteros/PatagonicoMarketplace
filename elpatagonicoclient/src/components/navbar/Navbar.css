@@ -1,0 +1,437 @@
+/* Estilos del Navbar consolidado con paleta del proyecto */
+:root {
+  --color-primary: #8b4513;
+  --color-secondary: #d2691e;
+  --color-accent: #ffd700;
+  --color-light: #fffaf0;
+  --color-white: #ffffff;
+  --color-dark: #1a1a1a;
+}
+
+/* Estilos simplificados del Navbar sin botones sociales */
+.navbar-custom {
+  background-color: #8b4513;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 0.75rem 0;
+}
+
+.navbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+/* Logo y marca */
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.navbar-brand:hover {
+  transform: scale(1.05);
+}
+
+.navbar-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+  border: 3px solid var(--color-accent);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.navbar-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fffaf0;
+  display: none;
+}
+
+/* Botón hamburguesa */
+.navbar-toggler {
+  border-color: #fffaf0;
+  display: none;
+  background: var(--color-accent);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.navbar-toggler:hover {
+  background: var(--color-white);
+  transform: scale(1.1);
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 250, 240, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Menú principal */
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex: 1;
+}
+
+.navbar-nav {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nav-item {
+  margin: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  color: var(--color-white);
+  background: none;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.nav-link-admin {
+  background: rgba(255, 215, 0, 0.2);
+  border: 2px solid var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.nav-link-admin:hover {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+/* Botones sociales */
+.navbar-social-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-social {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  border: 2px solid transparent;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-whatsapp {
+  background: #25d366;
+  color: white;
+  border-color: #25d366;
+}
+
+.btn-whatsapp:hover {
+  background: white;
+  color: #25d366;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+}
+
+.btn-instagram {
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  color: white;
+}
+
+.btn-instagram:hover {
+  background: white;
+  color: #833ab4;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(131, 58, 180, 0.4);
+}
+
+.btn-catalogo {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  border-color: var(--color-accent);
+}
+
+.btn-catalogo:hover {
+  background: var(--color-white);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+/* Iconos de acciones */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-icon-btn {
+  position: relative;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--color-accent);
+  color: var(--color-white);
+  padding: 0.5rem 0.75rem;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-icon-btn:hover {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.navbar-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 50px;
+  min-width: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.5);
+}
+
+/* Botones de perfil y login */
+.btn-profile,
+.btn-login {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 50px;
+  border: 2px solid var(--color-accent);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-profile {
+  background: var(--color-white);
+  color: var(--color-primary);
+}
+
+.btn-profile:hover {
+  background: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
+.btn-login {
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+
+.btn-login:hover {
+  background: var(--color-white);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.5);
+}
+
+.nav-link-custom {
+  color: #fffaf0 !important;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+  border: none;
+  background: none;
+  text-decoration: none;
+}
+
+.nav-link-custom:hover {
+  color: #ffd700 !important;
+  transform: translateY(-2px);
+}
+
+.btn-primary-custom {
+  background-color: #ffd700;
+  border: none;
+  color: #8b4513;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary-custom:hover {
+  background-color: #ffed4e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive Design */
+@media (min-width: 992px) {
+  .navbar-title {
+    display: block;
+  }
+}
+
+@media (max-width: 991px) {
+  .navbar-container {
+    padding: 0 1rem;
+  }
+
+  .navbar-toggler {
+    display: block;
+  }
+
+  .navbar-menu {
+    position: fixed;
+    top: 70px;
+    left: -100%;
+    width: 85%;
+    max-width: 350px;
+    height: calc(100vh - 70px);
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2rem 1.5rem;
+    gap: 1.5rem;
+    transition: left 0.4s ease;
+    overflow-y: auto;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .navbar-menu-open {
+    left: 0;
+  }
+
+  .navbar-nav {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .nav-link {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-social-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-social {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .btn-profile,
+  .btn-login {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+  }
+
+  .btn-social-text,
+  .btn-profile-text,
+  .btn-login-text {
+    display: inline;
+  }
+
+  .navbar-collapse {
+    background-color: #8b4513;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 8px;
+  }
+}
+
+@media (min-width: 992px) {
+  .btn-social-text {
+    display: inline;
+  }
+
+  .btn-profile-text,
+  .btn-login-text {
+    display: inline;
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 992px) {
+  .navbar-container {
+    gap: 1rem;
+  }
+
+  .navbar-nav {
+    gap: 0.25rem;
+  }
+
+  .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .btn-social {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .btn-social-text {
+    display: none;
+  }
+}
+

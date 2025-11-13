@@ -1,0 +1,105 @@
+/* ===========================================
+   🎨 ESTILOS PARA PRODUCT LIST
+   Grid mejorado con animaciones
+   =========================================== */
+
+.product-list-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  padding: 2rem 0;
+  animation: fadeInGrid 0.6s ease-in-out;
+}
+
+@keyframes fadeInGrid {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación escalonada para las tarjetas */
+.product-list-container > * {
+  animation: fadeInCard 0.5s ease-in-out backwards;
+}
+
+.product-list-container > *:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.product-list-container > *:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.product-list-container > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.product-list-container > *:nth-child(4) {
+  animation-delay: 0.25s;
+}
+.product-list-container > *:nth-child(5) {
+  animation-delay: 0.3s;
+}
+.product-list-container > *:nth-child(6) {
+  animation-delay: 0.35s;
+}
+.product-list-container > *:nth-child(n + 7) {
+  animation-delay: 0.4s;
+}
+
+@keyframes fadeInCard {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ====== ESTADO VACÍO ====== */
+.product-list-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #8b4513;
+}
+
+.product-list-empty h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #8b4513;
+}
+
+.product-list-empty p {
+  font-size: 1rem;
+  color: #666;
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 1200px) {
+  .product-list-container {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-list-container {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.25rem;
+    padding: 1.5rem 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .product-list-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem 0;
+  }
+}
