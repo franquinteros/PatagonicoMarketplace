@@ -530,3 +530,39 @@ html {
   }
 }
 
+/* Agregar a tu CSS existente */
+.products-info-bar {
+  background: linear-gradient(135deg, #fffaf0 0%, #fff5e6 100%);
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.products-count {
+  color: #8b4513;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.sort-container {
+  background: linear-gradient(135deg, #ffffff 0%, #fffaf0 100%);
+  border: 2px solid #d2691e;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.form-select {
+  border: 2px solid #d2691e;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  background-color: #ffffff;
+  color: #8b4513;
+  font-weight: 500;
+}
+
+.form-select:focus {
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+}
+

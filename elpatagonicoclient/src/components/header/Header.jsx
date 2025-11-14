@@ -1,134 +1,102 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import logo from "../../assets/logo.jpeg"
 import { useAppSelector } from "../../redux/hooks"
-import { Link } from "react-router-dom"
 
-const Navbar = () => {
+const EXTERNAL_LINKS = {
+  whatsapp: "https://wa.me/1234567890", // Reemplazar con tu número de WhatsApp
+  instagram: "https://instagram.com/tu_cuenta", // Reemplazar con tu cuenta de Instagram
+  catalogo: "/products", // URL del catálogo (puede ser externa o interna)
+}
+
+const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const { items: cartItems } = useAppSelector((state) => state.cart)
-  const { items: wishlistItems } = useAppSelector((state) => state.wishlist)
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth)
+  const navigate = useNavigate()
 
+  // Calcular la cantidad total de items en el carrito
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
-  const wishlistCount = wishlistItems.length
 
-  // ✅ DEBUG: Agregar logs para ver qué está pasando
-  useEffect(() => {
-    console.log("=== NAVBAR DEBUG ===")
-    console.log("isAuthenticated:", isAuthenticated)
-    console.log("user completo:", user)
-    console.log("user.role:", user?.role)
-    console.log("typeof user.role:", typeof user?.role)
-    console.log("==================")
-  }, [isAuthenticated, user])
+  // Verificar si el usuario es USER (no ADMIN)
+  const isUserRole = user?.role === "USER"
 
-  const closeMenu = () => setIsMenuOpen(false)
+  const handleNavigation = (path) => {
+    navigate(path)
+    setIsMenuOpen(false)
+  }
 
-  // ✅ Verificación del rol admin simplificada sin logs
   const isAdmin = () => {
-    if (!isAuthenticated || !user || !user.role) {
-      return false
-    }
+    if (!user || !user.role) return false
 
     let roleToCheck = ""
-
     if (Array.isArray(user.role)) {
       roleToCheck = user.role[0]?.authority || user.role[0]?.role || ""
     } else if (typeof user.role === "string") {
       roleToCheck = user.role
     }
 
-    const roleUpper = String(roleToCheck).toUpperCase()
-    return roleUpper === "ADMIN" || roleUpper === "ROLE_ADMIN"
+    return String(roleToCheck).toUpperCase() === "ADMIN" || String(roleToCheck).toUpperCase() === "ROLE_ADMIN"
+  }
+
+  const handleWhatsAppClick = () => {
+    window.open(EXTERNAL_LINKS.whatsapp, "_blank")
+  }
+
+  const handleInstagramClick = () => {
+    window.open(EXTERNAL_LINKS.instagram, "_blank")
+  }
+
+  const handleCatalogoClick = () => {
+    if (EXTERNAL_LINKS.catalogo.startsWith("http")) {
+      window.open(EXTERNAL_LINKS.catalogo, "_blank")
+    } else {
+      window.location.href = EXTERNAL_LINKS.catalogo
+    }
   }
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-white sticky-top">
-      <div className="container">
-        <Link className="navbar-brand" to="/">
-          <i className="bi bi-cart3"></i> MateMarket
-        </Link>
+    <header className="bg-white shadow-sm py-3">
+      <div className="container d-flex justify-content-between align-items-center">
+        {/* Logo */}
+        <div className="d-flex align-items-center">
+          <img src={logo || "/placeholder.svg"} alt="Mates El Patagónico" height="60" className="rounded-circle" />
+          <h1 className="ms-3 mb-0 fs-4 text-dark d-none d-md-block">Mates El Patagónico</h1>
+        </div>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-controls="navbarNav"
-          aria-expanded={isMenuOpen}
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
+        {/* Botones de acción social */}
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-success d-flex align-items-center gap-2"
+            onClick={handleWhatsAppClick}
+            title="Contactar por WhatsApp"
+          >
+            <i className="bi bi-whatsapp"></i>
+            <span className="d-none d-sm-inline">WhatsApp</span>
+          </button>
 
-        <div className={`collapse navbar-collapse ${isMenuOpen ? "show" : ""}`} id="navbarNav">
-          <ul className="navbar-nav mx-auto">
-            <li className="nav-item">
-              <Link className="nav-link" to="/" onClick={closeMenu}>
-                Home
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/products" onClick={closeMenu}>
-                Product Listing
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/checkout" onClick={closeMenu}>
-                Checkout
-              </Link>
-            </li>
+          <button
+            className="btn btn-danger d-flex align-items-center gap-2"
+            onClick={handleInstagramClick}
+            title="Seguinos en Instagram"
+          >
+            <i className="bi bi-instagram"></i>
+            <span className="d-none d-sm-inline">Seguinos</span>
+          </button>
 
-            {/* ✅ ADMIN PANEL */}
-            {isAdmin() && (
-              <li className="nav-item">
-                <Link className="nav-link text-danger fw-bold" to="/admin" onClick={closeMenu}>
-                  <i className="bi bi-gear-fill me-1"></i>
-                  Admin Panel
-                </Link>
-              </li>
-            )}
-          </ul>
-
-          <div className="d-flex align-items-center">
-            <Link to="/wishlist" className="text-dark me-3 position-relative" onClick={closeMenu}>
-              <i className="bi bi-heart fs-5"></i>
-              {wishlistCount > 0 && (
-                <span
-                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                  style={{ fontSize: "0.6em" }}
-                >
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
-
-            <Link to="/cart" className="text-dark me-3 position-relative" onClick={closeMenu}>
-              <i className="bi bi-cart fs-5"></i>
-              {cartCount > 0 && (
-                <span
-                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                  style={{ fontSize: "0.6em" }}
-                >
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-
-            {isAuthenticated ? (
-              <Link to="/profile" className="text-dark" onClick={closeMenu} title="Mi Perfil">
-                <i className="bi bi-person-circle fs-5"></i>
-              </Link>
-            ) : (
-              <Link to="/login" className="text-dark" onClick={closeMenu} title="Ingresar">
-                <i className="bi bi-person fs-5"></i>
-              </Link>
-            )}
-          </div>
+          <button
+            className="btn btn-primary d-flex align-items-center gap-2"
+            onClick={handleCatalogoClick}
+            title="Ver catálogo completo"
+          >
+            <i className="bi bi-book"></i>
+            <span className="d-none d-sm-inline">Catálogo</span>
+          </button>
         </div>
       </div>
-    </nav>
+    </header>
   )
 }
 
-export default Navbar
+export default Header

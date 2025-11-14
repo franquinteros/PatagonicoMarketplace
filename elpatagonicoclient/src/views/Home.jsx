@@ -8,87 +8,96 @@ import { fetchProducts } from "../redux/features/productSlice"
 import mates from "../assets/mates.png"
 
 const EXTERNAL_LINKS = {
-  whatsapp: "https://wa.me/1234567890", // Reemplazar con tu número de WhatsApp
-  instagram: "https://instagram.com/tu_cuenta", // Reemplazar con tu cuenta de Instagram
-  catalogo: "/products", // URL del catálogo (puede ser externa o ruta interna)
+  whatsapp: "https://wa.me/1234567890",
+  instagram: "https://instagram.com/tu_cuenta",
+  catalogo: "/products",
 }
 
 const Home = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
 
-  const { categories, loading: categoriesLoading } = useAppSelector((state) => state.categories)
-  const { list: products, loading: productsLoading } = useAppSelector((state) => state.products)
+  const { list: categories, loading: categoriesLoading, error: categoriesError } = useAppSelector((state) => state.categories)
+  const { list: products, loading: productsLoading, error: productsError } = useAppSelector((state) => state.products)
 
-  const [productList, setProductList] = useState([])
-  const [error, setError] = useState(null)
+  const [featuredProducts, setFeaturedProducts] = useState([])
+  const [loadingFeatured, setLoadingFeatured] = useState(false)
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
 
   useEffect(() => {
-    console.log("[v0] Home - Dispatching fetchCategories and fetchProducts")
+    console.log("[v1] Home - Dispatching fetchCategories and fetchProducts")
     dispatch(fetchCategories())
     dispatch(fetchProducts())
   }, [dispatch])
 
   useEffect(() => {
-    console.log("[v0] Home - Categories:", categories)
-    console.log("[v0] Home - Products from Redux:", products)
-  }, [categories, products])
+    console.log("[v1] Home - Categories state:", { 
+      categories, 
+      categoriesLoading, 
+      categoriesError,
+      categoriesLength: categories?.length 
+    })
+    console.log("[v1] Home - Products state:", { 
+      products, 
+      productsLoading, 
+      productsError,
+      productsLength: products?.length 
+    })
+  }, [categories, categoriesLoading, categoriesError, products, productsLoading, productsError])
 
+  // Estrategia 1: Usar productos directamente del Redux store
   useEffect(() => {
-    // Obteniendo una pequeña lista de productos para mostrar
-    const fetchHomeProducts = async () => {
+    if (products && products.length > 0) {
+      console.log("[v1] Home - Using products from Redux store")
+      // Tomar los primeros 4 productos como destacados
+      const featured = products.slice(0, 4)
+      console.log("[v1] Home - Featured products from Redux:", featured)
+      setFeaturedProducts(featured)
+      setLoadingFeatured(false)
+    }
+  }, [products])
+
+  // Estrategia 2: Si no hay productos en Redux, intentar cargar algunos manualmente
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      // Si ya tenemos productos de Redux, no hacer nada
+      if (products && products.length > 0) {
+        return
+      }
+
+      // Si no hay productos después de un tiempo, intentar cargar algunos
+      setLoadingFeatured(true)
       try {
-        console.log("[v0] Home - fetchHomeProducts starting")
-        const categoryList = categories.content || categories
-        console.log("[v0] Home - Category list:", categoryList)
-
-        const categoriesToShow = categoryList.slice(0, 4)
-        const productsArray = []
-
-        // Recorrer cada categoría y obtener un producto
-        for (const category of categoriesToShow) {
-          try {
-            // Obtener productos de esta categoría
-            const url = `${API_URL}/api/products/search/category/${category.id}`
-            console.log("[v0] Home - Fetching products from category:", url)
-
-            const productsByCategoryResponse = await fetch(url)
-
-            if (!productsByCategoryResponse.ok) {
-              console.warn(`[v0] Home - No se pudieron cargar productos de la categoría ${category.id}`)
-              continue
-            }
-
-            const productsByCategoryData = await productsByCategoryResponse.json()
-            console.log("[v0] Home - Products by category data:", productsByCategoryData)
-
-            // Extraer el primer producto
-            const products = productsByCategoryData.content || productsByCategoryData
-
-            if (products && products.length > 0) {
-              const product = products[0]
-              productsArray.push(product)
-            }
-          } catch (err) {
-            console.error(`[v0] Home - Error fetching products for category ${category.id}:`, err)
+        console.log("[v1] Home - No products in Redux, fetching directly...")
+        
+        // Intentar obtener productos directamente
+        const response = await fetch(`${API_URL}/api/products`)
+        if (response.ok) {
+          const data = await response.json()
+          const productsArray = data.content || data
+          
+          if (Array.isArray(productsArray) && productsArray.length > 0) {
+            const featured = productsArray.slice(0, 4)
+            console.log("[v1] Home - Featured products from direct fetch:", featured)
+            setFeaturedProducts(featured)
           }
         }
-
-        console.log("[v0] Home - Final products array:", productsArray)
-        setProductList(productsArray)
-        setError(null)
-      } catch (err) {
-        console.error("[v0] Home - Error en fetchHomeProducts:", err)
-        setError(err.message)
+      } catch (error) {
+        console.error("[v1] Home - Error loading featured products:", error)
+      } finally {
+        setLoadingFeatured(false)
       }
     }
 
-    if (categories && categories.length > 0) {
-      fetchHomeProducts()
-    }
-  }, [categories, API_URL])
+    const timer = setTimeout(() => {
+      if (productsLoading && categoriesLoading) {
+        loadFeaturedProducts()
+      }
+    }, 2000) // Esperar 2 segundos antes de intentar carga directa
+
+    return () => clearTimeout(timer)
+  }, [products, productsLoading, categoriesLoading, API_URL])
 
   const handleWhatsAppClick = () => {
     window.open(EXTERNAL_LINKS.whatsapp, "_blank")
@@ -124,7 +133,17 @@ const Home = () => {
     },
   ]
 
-  const loading = categoriesLoading || productsLoading
+  const isLoading = categoriesLoading || productsLoading || loadingFeatured
+  const hasError = categoriesError || productsError
+  const hasProducts = featuredProducts.length > 0
+
+  console.log("[v1] Home - Render state:", {
+    isLoading,
+    hasError,
+    hasProducts,
+    featuredProductsCount: featuredProducts.length,
+    categoriesCount: categories?.length
+  })
 
   return (
     <div>
@@ -188,30 +207,40 @@ const Home = () => {
             <p className="lead text-muted">Nuestra selección de mates y accesorios más populares</p>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Cargando productos...</span>
               </div>
               <p className="mt-3 text-muted">Cargando productos destacados...</p>
             </div>
-          ) : error ? (
+          ) : hasError ? (
             <div className="alert alert-warning text-center" role="alert">
               <i className="bi bi-exclamation-triangle me-2"></i>
-              {error}
+              {categoriesError || productsError || "Error al cargar los productos"}
             </div>
-          ) : productList.length === 0 ? (
+          ) : !hasProducts ? (
             <div className="text-center py-5">
               <i className="bi bi-box-seam fs-1 text-muted mb-3"></i>
               <p className="text-muted">No hay productos disponibles en este momento.</p>
+              <button 
+                className="btn btn-primary-custom mt-3"
+                onClick={() => {
+                  dispatch(fetchProducts())
+                  dispatch(fetchCategories())
+                }}
+              >
+                <i className="bi bi-arrow-clockwise me-2"></i>
+                Reintentar
+              </button>
             </div>
           ) : (
             <>
               <div className="row g-4">
-                {productList.map((product, index) => (
+                {featuredProducts.map((product, index) => (
                   <div
-                    key={product.id}
-                    className={`col-md-6 col-lg-3 animate-fadeInUp animate-delay-${(index % 3) + 1}`}
+                    key={product.id || index}
+                    className={`col-md-6 col-lg-3 animate-fadeInUp animate-delay-${(index % 4) + 1}`}
                   >
                     <div className="card card-product h-100">
                       <div className="position-relative">
@@ -233,11 +262,21 @@ const Home = () => {
                           style={{ cursor: "pointer" }}
                           onClick={() => navigate(`/products/${product.id}`)}
                         >
-                          {product.name}
+                          {product.name || "Producto sin nombre"}
                         </h5>
-                        <p className="card-text flex-grow-1">{product.description?.substring(0, 60)}...</p>
+                        <p className="card-text flex-grow-1 text-muted">
+                          {product.description ? 
+                            (product.description.length > 60 ? 
+                              `${product.description.substring(0, 60)}...` : 
+                              product.description
+                            ) : 
+                            "Descripción no disponible"
+                          }
+                        </p>
                         <div className="d-flex justify-content-between align-items-center mt-3">
-                          <h4 className="text-secondary-custom fw-bold mb-0">${(product.price / 100).toFixed(2)}</h4>
+                          <h4 className="text-secondary-custom fw-bold mb-0">
+                            ${product.price ? (product.price / 100).toFixed(2) : "0.00"}
+                          </h4>
                         </div>
                       </div>
                     </div>
