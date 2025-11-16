@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-
+import axiosInstance from "../../config/axiosConfig";
 
 const CartItem = ({ cartItem, onIncrement, onDecrement, onRemove }) => {
   const { id, productName, unitPrice, quantity, finalPrice, image } = cartItem;
@@ -7,31 +7,25 @@ const CartItem = ({ cartItem, onIncrement, onDecrement, onRemove }) => {
   const [imageData, setImageData] = useState(null);
   const [imageLoading, setImageLoading] = useState(true);
 
-  const API_URL = "http://localhost:8080";
-
   useEffect(() => {
     const fetchImage = async () => {
       if (!image) {
-        console.log(`[CartItem] No image for product ${id}`);
+        //console.log(`[CartItem] No image for product ${id}`);
         setImageData(null);
         setImageLoading(false);
         return;
       }
-
       try {
-        const fullUrl = image.startsWith("http") ? image : `${API_URL}${image}`;
-        console.log(`[CartItem] Fetching image: ${fullUrl}`);
+        //console.log(`[CartItem] Fetching image: ${image}`);
 
-        const response = await fetch(fullUrl);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-        const imageJson = await response.json();
-        if (imageJson.file) {
-          const dataUrl = `data:image/png;base64,${imageJson.file}`;
+        const response = await axiosInstance.get(image, { responseType: 'json' });
+        
+        if (response.data.file) {
+          const dataUrl = `data:image/png;base64,${response.data.file}`;
           setImageData(dataUrl);
         }
       } catch (error) {
-        console.error(`[CartItem] Error fetching image:`, error);
+        //console.error(`[CartItem] Error fetching image:`, error);
         setImageData(null);
       } finally {
         setImageLoading(false);
@@ -56,7 +50,7 @@ const CartItem = ({ cartItem, onIncrement, onDecrement, onRemove }) => {
               </div>
             ) : (
               <img
-                src={displayImage}
+                src={displayImage || "/placeholder.svg"}
                 alt={productName}
                 className="cart-item-image"
                 onError={(e) => {

@@ -3,21 +3,20 @@
 import { useState, useEffect } from "react"
 import { FaHeart, FaRegHeart, FaShoppingCart } from "react-icons/fa"
 import { Link } from "react-router-dom"
-import { useAppSelector, useAppDispatch } from "../../../redux/hooks"
+import { useSelector, useDispatch } from "react-redux"
 import { addToCart } from "../../../redux/features/cartSlice"
 import { toggleWishlist } from "../../../redux/features/wishlistSlice"
+import axiosInstance from "../../../config/axiosConfig"
 import "./ProductCard.css"
 
 const ProductCard = ({ id, name, description, basePrice, price, imagesURL, active = true }) => {
-  const dispatch = useAppDispatch()
-  const { items: wishlistItems } = useAppSelector((state) => state.wishlist)
-  const { isAuthenticated } = useAppSelector((state) => state.auth)
+  const dispatch = useDispatch()
+  const { items: wishlistItems } = useSelector((state) => state.wishlist)
+  const { isAuthenticated } = useSelector((state) => state.auth)
 
   const [imageData, setImageData] = useState(null)
   const [imageLoading, setImageLoading] = useState(true)
   const [imageError, setImageError] = useState(false)
-
-  const API_URL = "http://localhost:8080"
 
   useEffect(() => {
     const fetchImageData = async () => {
@@ -33,18 +32,10 @@ const ProductCard = ({ id, name, description, basePrice, price, imagesURL, activ
       const firstImageUrl = imagesURL[0]
 
       try {
-        const fullUrl = firstImageUrl.startsWith("http") ? firstImageUrl : `${API_URL}${firstImageUrl}`
+        const response = await axiosInstance.get(firstImageUrl, { responseType: 'json' })
 
-        const response = await fetch(fullUrl)
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const imageJson = await response.json()
-
-        if (imageJson.file) {
-          const base64Data = imageJson.file
+        if (response.data.file) {
+          const base64Data = response.data.file
           const mimeType = "image/png"
           const dataUrl = `data:${mimeType};base64,${base64Data}`
 
@@ -64,29 +55,29 @@ const ProductCard = ({ id, name, description, basePrice, price, imagesURL, activ
     fetchImageData()
   }, [imagesURL, id])
 
-  const isInWishlist = wishlistItems.some((item) => item.id === id)
+  const isInWishlist = wishlistItems.includes(id)
 
   const handleAddToCart = async () => {
     if (!active) return
 
     if (!isAuthenticated) {
-      alert("⚠️ Debes iniciar sesión para agregar productos al carrito.")
+      alert("Debes iniciar sesión para agregar productos al carrito.")
       return
     }
 
     try {
       const productId = Number(id)
       await dispatch(addToCart({ productId, quantity: 1 })).unwrap()
-      alert(`${name} agregado al carrito ✅`)
+      alert(`${name} agregado al carrito`)
     } catch (error) {
-      console.error(`❌ Error al agregar el producto ${id} al carrito:`, error)
+      console.error(`Error al agregar el producto ${id} al carrito:`, error)
       alert("Ocurrió un error al agregar el producto al carrito.")
     }
   }
 
   const handleToggleWishlist = async () => {
     if (!isAuthenticated) {
-      alert("⚠️ Debes iniciar sesión para agregar a favoritos.")
+      alert("Debes iniciar sesión para agregar a favoritos.")
       return
     }
 

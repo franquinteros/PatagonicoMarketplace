@@ -1,8 +1,8 @@
-"use client"
+"use client" //qué es esto?
 
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useAppDispatch, useAppSelector } from "../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import { clearCart } from "../redux/features/cartSlice"
 import { fetchPaymentMethods } from "../redux/features/paymentMethodSlice"
 import { fetchDeliveryTypes } from "../redux/features/deliveryTypeSlice"
@@ -10,13 +10,13 @@ import { createOrder, clearOrderError } from "../redux/features/orderSlice"
 
 const Checkout = () => {
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
+  const dispatch = useDispatch()
 
-  const { isAuthenticated, loading: authLoading, user, token } = useAppSelector((state) => state.auth)
-  const { items: cartItems, totalAmount } = useAppSelector((state) => state.cart)
-  const { paymentMethods, loading: paymentLoading } = useAppSelector((state) => state.paymentMethods)
-  const { deliveryTypes, loading: deliveryLoading } = useAppSelector((state) => state.deliveryTypes)
-  const { loading: orderLoading, error: orderError } = useAppSelector((state) => state.orders)
+  const { isAuthenticated, loading: authLoading, user, token } = useSelector((state) => state.auth)
+  const { items: cartItems, totalAmount } = useSelector((state) => state.cart)
+  const { list: paymentMethods, loading: paymentLoading } = useSelector((state) => state.paymentMethods)
+  const { list: deliveryTypes, loading: deliveryLoading } = useSelector((state) => state.deliveryTypes)
+  const { loading: orderLoading, error: orderError } = useSelector((state) => state.orders)
 
   // Estados para los datos del checkout
   const [cartId, setCartId] = useState(null)
@@ -289,7 +289,7 @@ const Checkout = () => {
 
               <button
                 className="btn btn-outline-secondary w-100"
-                onClick={() => navigate("/CartView")}
+                onClick={() => navigate("/cart")}
                 disabled={orderLoading}
               >
                 <i className="bi bi-arrow-left me-2"></i>

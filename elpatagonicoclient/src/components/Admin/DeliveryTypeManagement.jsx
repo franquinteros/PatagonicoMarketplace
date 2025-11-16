@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import {
   fetchDeliveryTypes,
   createDeliveryType,
@@ -10,8 +10,8 @@ import {
 } from "../../redux/features/deliveryTypeSlice"
 
 const DeliveryTypeManagement = () => {
-  const dispatch = useAppDispatch()
-  const { list: deliveryTypes, loading } = useAppSelector((state) => state.deliveryTypes)
+  const dispatch = useDispatch()
+  const { list: deliveryTypes, loading } = useSelector((state) => state.deliveryTypes)
 
   const [showForm, setShowForm] = useState(false)
   const [editingType, setEditingType] = useState(null)

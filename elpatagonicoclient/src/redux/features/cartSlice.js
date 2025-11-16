@@ -1,333 +1,267 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
-const CART_URL = `${API_URL}/api/cart`
+const API_URL = "http://localhost:8080";
 
-// Helper para mapear items del carrito
+// ===================== HELPERS =====================
+
 const mapToCartItems = (data) => {
   if (!Array.isArray(data)) {
-    console.warn("[cartSlice] data is not an array:", data)
-    return []
+    console.warn("[cartSlice] data is not an array:", data);
+    return [];
   }
 
   return data.map((item) => ({
-    id: item.product,
-    productName: item.name || `Producto ${item.product}`,
-    unitPrice: item.unitPrice,
+    id: item.product,           // ID del producto
+    productId: item.product,
     quantity: item.quantity,
+    unitPrice: item.unitPrice,
     finalPrice: item.totalPrice,
-    image: item.imagesURL?.[0] || item.image?.id || null,
-  }))
-}
 
-// Async thunks
-export const fetchCartItems = createAsyncThunk("cart/fetchItems", async ({ userId, token }, { rejectWithValue }) => {
-  try {
-    console.log(`[cartSlice] Fetching cart items for user ${userId}...`)
+    // Datos que NO vienen del backend → valores placeholder
+    productName: `Producto ${item.product}`,
+    image: null,
+  }));
+};
 
-    const response = await fetch(`${CART_URL}/items/${userId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+// ===================== THUNKS =====================
 
-    console.log(`[cartSlice] Response status: ${response.status}`)
+// Get cart items
+export const fetchCartItems = createAsyncThunk(
+  "cart/fetchItems",
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("Usuario no autenticado");
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`[cartSlice] Error response:`, errorText)
-      throw new Error(`No se pudo cargar el carrito. Status: ${response.status}`)
+      const { data } = await axios.get(`${API_URL}/api/cart/items/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      return mapToCartItems(data);
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-
-    const data = await response.json()
-    console.log(`[cartSlice] Cart data received:`, data)
-
-    return mapToCartItems(data)
-  } catch (error) {
-    console.error("[cartSlice] Error fetching cart:", error)
-    return rejectWithValue(error.message)
   }
-})
+);
 
-export const fetchCartTotal = createAsyncThunk("cart/fetchTotal", async ({ userId, token }, { rejectWithValue }) => {
-  try {
-    console.log(`[cartSlice] Fetching cart total for user ${userId}...`)
+// Get total
+export const fetchCartTotal = createAsyncThunk(
+  "cart/fetchTotal",
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("Usuario no autenticado");
 
-    const response = await fetch(`${CART_URL}/total/${userId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+      const { data } = await axios.get(`${API_URL}/api/cart/total/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    console.log(`[cartSlice] Total response status: ${response.status}`)
-
-    if (!response.ok) {
-      throw new Error(`Error al obtener total. Status: ${response.status}`)
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-
-    const data = await response.json()
-    console.log(`✅ [cartSlice] Total received:`, data)
-
-    return data
-  } catch (error) {
-    console.error("[cartSlice] Error fetching total:", error)
-    return rejectWithValue(error.message)
   }
-})
+);
 
+// Add item
 export const addToCart = createAsyncThunk(
   "cart/addItem",
-  async ({ userId, productId, quantity = 1, token }, { dispatch, rejectWithValue }) => {
+  async ({ productId, quantity = 1 }, { getState, dispatch, rejectWithValue }) => {
     try {
-      console.log(`[cartSlice] Adding to cart:`, { productId, quantity, userId })
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
 
-      const response = await fetch(`${CART_URL}/addItem/${userId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ product: productId, quantity }),
-      })
+      if (!token || !userId) return rejectWithValue("Usuario no autenticado");
 
-      console.log(`[cartSlice] Add response status: ${response.status}`)
+      await axios.put(
+        `${API_URL}/api/cart/addItem/${userId}`,
+        { product: productId, quantity },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`[cartSlice] Error response:`, errorText)
-        throw new Error(`Error ${response.status} en la acción del carrito.`)
-      }
+      await dispatch(fetchCartItems());
+      await dispatch(fetchCartTotal());
 
-      const responseData = await response.text()
-      console.log(`[cartSlice] Add successful:`, responseData)
-
-      // Refrescar carrito
-      await dispatch(fetchCartItems({ userId, token }))
-      await dispatch(fetchCartTotal({ userId, token }))
-
-      return true
+      return true;
     } catch (error) {
-      console.error("[cartSlice] Error adding to cart:", error)
-      return rejectWithValue(error.message)
+      return rejectWithValue(
+        error.response?.data?.message ||
+        error.response?.data ||
+        error.message
+      );
     }
-  },
-)
+  }
+);
 
+// Remove item
 export const removeFromCart = createAsyncThunk(
   "cart/removeItem",
-  async ({ userId, productId, token }, { dispatch, rejectWithValue }) => {
+  async (productId, { getState, dispatch, rejectWithValue }) => {
     try {
-      console.log(`[cartSlice] Removing from cart:`, { productId, userId })
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("Usuario no autenticado");
 
-      const response = await fetch(`${CART_URL}/removeItem/${userId}/${productId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      await axios.put(
+        `${API_URL}/api/cart/removeItem/${userId}/${productId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      console.log(`[cartSlice] Remove response status: ${response.status}`)
+      await dispatch(fetchCartItems());
+      await dispatch(fetchCartTotal());
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`[cartSlice] Error response:`, errorText)
-        throw new Error(`Error ${response.status} en la acción del carrito.`)
-      }
-
-      const responseData = await response.text()
-      console.log(`[cartSlice] Remove successful:`, responseData)
-
-      // Refrescar carrito
-      await dispatch(fetchCartItems({ userId, token }))
-      await dispatch(fetchCartTotal({ userId, token }))
-
-      return true
+      return true;
     } catch (error) {
-      console.error("[cartSlice] Error removing from cart:", error)
-      return rejectWithValue(error.message)
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || error.message
+      );
     }
-  },
-)
+  }
+);
 
+// Increment quantity
 export const incrementQuantity = createAsyncThunk(
   "cart/incrementQuantity",
-  async ({ userId, productId, token }, { dispatch, rejectWithValue }) => {
+  async (productId, { dispatch, rejectWithValue, getState }) => {
     try {
-      console.log(`[cartSlice] Incrementing quantity for product ${productId}`)
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("Usuario no autenticado");
 
-      const response = await fetch(`${CART_URL}/addItem/${userId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ product: productId, quantity: 1 }),
-      })
+      // Backend expects the 'quantity' as the delta to add (can be negative to subtract).
+      // Send a delta of +1 to increment.
+      await axios.put(
+        `${API_URL}/api/cart/addItem/${userId}`,
+        { product: productId, quantity: 1 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}`)
-      }
+      await dispatch(fetchCartItems());
+      await dispatch(fetchCartTotal());
 
-      console.log(`[cartSlice] Increment successful`)
-
-      // Refrescar carrito
-      await dispatch(fetchCartItems({ userId, token }))
-      await dispatch(fetchCartTotal({ userId, token }))
-
-      return true
+      return true;
     } catch (error) {
-      console.error("[cartSlice] Error incrementing:", error)
-      return rejectWithValue(error.message)
+      return rejectWithValue(error.message);
     }
-  },
-)
+  }
+);
 
+
+// Decrement quantity
 export const decrementQuantity = createAsyncThunk(
   "cart/decrementQuantity",
-  async ({ userId, productId, quantity, token }, { dispatch, rejectWithValue }) => {
+  async (productId, { dispatch, rejectWithValue, getState }) => {
     try {
-      console.log(`[cartSlice] Decrementing quantity for product ${productId}`)
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("Usuario no autenticado");
 
-      if (quantity <= 1) {
-        return await dispatch(removeFromCart({ userId, productId, token }))
+      const currentItem = getState().cart.items.find((it) => it.id === productId);
+      const currentQty = currentItem?.quantity ?? 0;
+
+      if (currentQty <= 1) {
+        return dispatch(removeFromCart(productId));
       }
 
-      // Eliminar y volver a agregar con cantidad - 1
-      const removeResponse = await fetch(`${CART_URL}/removeItem/${userId}/${productId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      // Send a delta of -1 to decrement (backend will subtract and update totalPrice).
+      await axios.put(
+        `${API_URL}/api/cart/addItem/${userId}`,
+        { product: productId, quantity: -1 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      if (!removeResponse.ok) {
-        throw new Error(`Error ${removeResponse.status}`)
-      }
+      await dispatch(fetchCartItems());
+      await dispatch(fetchCartTotal());
 
-      const addResponse = await fetch(`${CART_URL}/addItem/${userId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ product: productId, quantity: quantity - 1 }),
-      })
-
-      if (!addResponse.ok) {
-        throw new Error(`Error ${addResponse.status}`)
-      }
-
-      console.log(`[cartSlice] Decrement successful`)
-
-      // Refrescar carrito
-      await dispatch(fetchCartItems({ userId, token }))
-      await dispatch(fetchCartTotal({ userId, token }))
-
-      return true
+      return true;
     } catch (error) {
-      console.error("[cartSlice] Error decrementing:", error)
-      return rejectWithValue(error.message)
+      return rejectWithValue(error.message);
     }
-  },
-)
-
-export const clearCart = createAsyncThunk("cart/clear", async ({ userId, token }, { rejectWithValue }) => {
-  try {
-    console.log(`[cartSlice] Clearing cart for user ${userId}`)
-
-    const response = await fetch(`${CART_URL}/clearCart/${userId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    console.log(`[cartSlice] Clear response status: ${response.status}`)
-
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}`)
-    }
-
-    console.log(`[cartSlice] Cart cleared`)
-
-    return true
-  } catch (error) {
-    console.error("[cartSlice] Error clearing cart:", error)
-    return rejectWithValue(error.message)
   }
-})
+);
 
-// Slice
+// Clear cart
+export const clearCart = createAsyncThunk(
+  "cart/clear",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("Usuario no autenticado");
+
+      await axios.delete(`${API_URL}/api/cart/clearCart/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      return true;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// ===================== SLICE =====================
+
 const cartSlice = createSlice({
   name: "cart",
   initialState: {
     items: [],
-    totalAmount: 0.0,
+    totalAmount: 0,
     loading: false,
     error: null,
   },
   reducers: {
     clearCartError: (state) => {
-      state.error = null
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Items
       .addCase(fetchCartItems.pending, (state) => {
-        state.loading = true
-        state.error = null
+        state.loading = true;
       })
       .addCase(fetchCartItems.fulfilled, (state, action) => {
-        state.loading = false
-        state.items = action.payload
+        state.loading = false;
+        state.items = action.payload;
       })
       .addCase(fetchCartItems.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
+        state.loading = false;
+        state.error = action.payload;
       })
-      // Fetch Total
+
       .addCase(fetchCartTotal.fulfilled, (state, action) => {
-        state.totalAmount = action.payload
+        state.totalAmount = action.payload;
       })
-      // Clear Cart
-      .addCase(clearCart.fulfilled, (state) => {
-        state.items = []
-        state.totalAmount = 0.0
-      })
-      // Add Item
-      .addCase(addToCart.pending, (state) => {
-        state.loading = true
-      })
-      .addCase(addToCart.fulfilled, (state) => {
-        state.loading = false
-      })
+
       .addCase(addToCart.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
-      })
-      // Remove Item
-      .addCase(removeFromCart.pending, (state) => {
-        state.loading = true
-      })
-      .addCase(removeFromCart.fulfilled, (state) => {
-        state.loading = false
+        state.error = action.payload;
       })
       .addCase(removeFromCart.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
+        state.error = action.payload;
       })
+      .addCase(incrementQuantity.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+      .addCase(decrementQuantity.rejected, (state, action) => {
+        state.error = action.payload;
+      });
   },
-})
+});
 
-export const { clearCartError } = cartSlice.actions
+// SELECTORS
+export const selectCartItems = (state) => state.cart.items;
+export const selectCartTotal = (state) => state.cart.totalAmount;
+export const selectCartLoading = (state) => state.cart.loading;
+export const selectCartError = (state) => state.cart.error;
 
-// Selectors
-export const selectCartItems = (state) => state.cart.items
-export const selectCartTotal = (state) => state.cart.totalAmount
-export const selectCartLoading = (state) => state.cart.loading
-export const selectCartError = (state) => state.cart.error
+export const { clearCartError } = cartSlice.actions;
 
-export default cartSlice.reducer
+export default cartSlice.reducer;

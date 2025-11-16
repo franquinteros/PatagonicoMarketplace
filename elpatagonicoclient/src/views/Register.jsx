@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAppDispatch, useAppSelector } from "../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import { registerUser, clearError } from "../redux/features/authSlice"
 import { useNavigate, Link } from "react-router-dom"
 import logo from "../assets/logo.jpeg"
 
 const Register = () => {
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
-  const { loading, error, isAuthenticated } = useAppSelector((state) => state.auth)
+  const dispatch = useDispatch()
+  const { loading, error, isAuthenticated } = useSelector((state) => state.auth)
 
   const [formData, setFormData] = useState({
     email: "",

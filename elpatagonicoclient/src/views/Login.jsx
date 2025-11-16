@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAppDispatch, useAppSelector } from "../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import { loginUser, clearError } from "../redux/features/authSlice"
 import { Link, useNavigate } from "react-router-dom"
 import logo from "../assets/logo.jpeg"
@@ -12,8 +12,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
 
-  const dispatch = useAppDispatch()
-  const { loading, error, isAuthenticated, user } = useAppSelector((state) => state.auth)
+  const dispatch = useDispatch()
+  const { loading, error, isAuthenticated, user } = useSelector((state) => state.auth)
 
   useEffect(() => {
     if (isAuthenticated && user) {

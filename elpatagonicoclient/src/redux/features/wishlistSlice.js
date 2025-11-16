@@ -1,232 +1,162 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import { openAuthModal } from './authSlice';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+const API_URL = "http://localhost:8080";
 
-// Helper para obtener o crear lista de favoritos
-const getOrCreateFavoriteList = async (userId, token) => {
-  try {
-    console.log(` [wishlistSlice] Checking if favorite list exists for user ${userId}...`)
+// ===================== THUNKS =====================
 
-    const getResponse = await fetch(`${API_URL}/api/favorite-list/user/${userId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+// Obtiene o crea la lista
+export const getFavoriteList = createAsyncThunk(
+  "wishlist/getList",
+  async (_, { getState, dispatch, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("No autenticado");
 
-    console.log(` [wishlistSlice] Get list response status: ${getResponse.status}`)
+      const { data } = await axios.get(
+        `${API_URL}/api/favorite-list/user/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    if (getResponse.ok) {
-      const data = await getResponse.json()
-      console.log(" [wishlistSlice] Favorite list data:", data)
-
-      if (data && data.id) {
-        console.log(" [wishlistSlice] List ID found:", data.id)
-        return data.id
+      return data.id;
+    } catch (err) {
+      if (err.response?.status === 404) {
+        // Mostrar modal login
+        dispatch(openAuthModal());
+        return null;
       }
+
+      return rejectWithValue(err.message);
     }
-
-    if (getResponse.status === 404 || !getResponse.ok) {
-      console.log(" [wishlistSlice] List not found, creating new one...")
-
-      const createResponse = await fetch(`${API_URL}/api/favorite-list/create/${userId}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      console.log(` [wishlistSlice] Create list response status: ${createResponse.status}`)
-
-      if (createResponse.ok) {
-        const newList = await createResponse.json()
-        console.log(" [wishlistSlice] New favorite list created:", newList)
-        return newList.id
-      }
-    }
-
-    throw new Error("No se pudo obtener o crear la lista de favoritos")
-  } catch (error) {
-    console.error(" [wishlistSlice] Error getting/creating list:", error)
-    throw error
   }
-}
+);
 
-// Async thunks
-export const fetchWishlist = createAsyncThunk("wishlist/fetch", async ({ userId, token }, { rejectWithValue }) => {
-  try {
-    console.log(` [wishlistSlice] Fetching wishlist for user ${userId}...`)
+// Carga los favoritos
+export const fetchWishlist = createAsyncThunk(
+  "wishlist/fetch",
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.token;
+      if (!token) return rejectWithValue("No autenticado");
 
-    const endpoint = `${API_URL}/api/favorite-list/user/${userId}`
-    console.log(` [wishlistSlice] GET ${endpoint}`)
+      const { data } = await axios.get(
+        `${API_URL}/api/favorite-list/user/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    const response = await fetch(endpoint, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    console.log(` [wishlistSlice] Response status: ${response.status}`)
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.warn(" [wishlistSlice] Wishlist not found (404), starting with empty list")
-        return []
-      }
-      const errorText = await response.text()
-      console.error(` [wishlistSlice] Error response:`, errorText)
-      throw new Error(`Error ${response.status}: No se pudo obtener la lista de favoritos`)
+      return data.products.map((p) => p.id);
+    } catch (err) {
+      return rejectWithValue(err.message);
     }
-
-    const data = await response.json()
-    console.log(" [wishlistSlice] Wishlist data received:", data)
-
-    if (Array.isArray(data)) {
-      const productIds = data.map((item) => item.id)
-      console.log(" [wishlistSlice] Product IDs in wishlist:", productIds)
-      return productIds
-    } else if (data && data.products && Array.isArray(data.products)) {
-      const productIds = data.products.map((item) => item.id)
-      console.log(" [wishlistSlice] Product IDs in wishlist (from data.products):", productIds)
-      return productIds
-    } else {
-      console.warn(" [wishlistSlice] Data is not an array:", data)
-      return []
-    }
-  } catch (error) {
-    console.error(" [wishlistSlice] Error fetching wishlist:", error)
-    return rejectWithValue(error.message)
   }
-})
+);
 
+// Agrega o quita favoritos
 export const toggleWishlist = createAsyncThunk(
   "wishlist/toggle",
-  async ({ userId, productId, token, isInWishlist }, { rejectWithValue }) => {
+  async (productId, { getState, dispatch, rejectWithValue }) => {
     try {
-      console.log(` [wishlistSlice] Toggle wishlist for product ${productId}`)
+      const token = getState().auth.token;
+      const userId = getState().auth.user?.id;
+      if (!token || !userId) return rejectWithValue("No autenticado");
 
-      const listId = await getOrCreateFavoriteList(userId, token)
-      if (!listId) {
-        throw new Error("No se pudo acceder a tu lista de favoritos")
+      // Refresh server-side wishlist to avoid stale local state
+      const fetchRes = await dispatch(fetchWishlist(userId));
+      const currentItems = fetchRes.payload || [];
+      const isInWishlist = currentItems.includes(productId);
+
+      // Ensure we have a favorite list id; ask the server for it (backend manages creation)
+      const res = await dispatch(getFavoriteList());
+      const listId = res.payload;
+      if (!listId) return rejectWithValue("Lista no disponible");
+
+      if (isInWishlist) {
+        await axios.delete(`${API_URL}/api/favorite-list/${listId}/product-delete/${productId}`, { headers: { Authorization: `Bearer ${token}` } });
+      } else {
+        await axios.put(`${API_URL}/api/favorite-list/${listId}/product-add`, { id: productId }, { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } });
       }
 
-      console.log(`✅ [wishlistSlice] Using list ID: ${listId}`)
-      console.log(
-        `${isInWishlist ? "🗑️" : "➕"} [wishlistSlice] ${isInWishlist ? "Removing from" : "Adding to"} wishlist`,
-      )
-
-      const endpoint = isInWishlist
-        ? `${API_URL}/api/favorite-list/${listId}/product-delete/${productId}`
-        : `${API_URL}/api/favorite-list/${listId}/product-add`
-
-      console.log(` [wishlistSlice] ${isInWishlist ? "DELETE" : "PUT"} ${endpoint}`)
-
-      const options = {
-        method: isInWishlist ? "DELETE" : "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-
-      if (!isInWishlist) {
-        const requestBody = {
-          id: productId,
-          productId: productId,
-        }
-        options.body = JSON.stringify(requestBody)
-        console.log(` [wishlistSlice] Request body:`, requestBody)
-      }
-
-      const response = await fetch(endpoint, options)
-      console.log(` [wishlistSlice] Response status: ${response.status}`)
-
-      if (!response.ok) {
-        let errorMsg = `Error ${response.status}`
+      // Return the previous membership so reducer can toggle correctly
+      return { productId, isInWishlist };
+    } catch (err) {
+      // If backend replies with BAD_REQUEST because product already in list / not in list,
+      // refresh the client state and return a neutral rejection so UI can update.
+      if (err.response?.status === 400) {
         try {
-          const errorData = await response.json()
-          console.error(` [wishlistSlice] Error response (JSON):`, errorData)
-          errorMsg = errorData.message || errorData.error || errorMsg
-        } catch (e) {
-          const errorText = await response.text()
-          console.error(` [wishlistSlice] Error response (text):`, errorText)
-          errorMsg = errorText || errorMsg
+          const userId = getState().auth.user?.id;
+          await dispatch(fetchWishlist(userId));
+          return rejectWithValue("Bad request: operación inválida en la lista de favoritos");
+        } catch (inner) {
+          return rejectWithValue(inner.message || "Error al sincronizar favoritos");
         }
-        throw new Error(errorMsg)
       }
 
-      console.log(" [wishlistSlice] Wishlist updated successfully!")
+      // If the favorite list endpoint returned 404 (no lista), ask to open auth modal as fallback
+      if (err.response?.status === 404) {
+        dispatch(openAuthModal());
+        return rejectWithValue("Lista de favoritos no encontrada");
+      }
 
-      return { productId, isInWishlist }
-    } catch (error) {
-      console.error(" [wishlistSlice] Error updating wishlist:", error)
-      return rejectWithValue(error.message)
+      return rejectWithValue(err.message);
     }
-  },
-)
+  }
+);
 
-// Slice
+// ===================== SLICE =====================
+
 const wishlistSlice = createSlice({
   name: "wishlist",
   initialState: {
-    items: [], // Array de IDs de productos
+    items: [],
     loading: false,
     error: null,
   },
   reducers: {
     clearWishlistError: (state) => {
-      state.error = null
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Wishlist
+
+      // FETCH
       .addCase(fetchWishlist.pending, (state) => {
-        state.loading = true
-        state.error = null
+        state.loading = true;
       })
       .addCase(fetchWishlist.fulfilled, (state, action) => {
-        state.loading = false
-        state.items = action.payload
+        state.loading = false;
+        state.items = action.payload;
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
+        state.loading = false;
+        state.error = action.payload;
       })
-      // Toggle Wishlist
-      .addCase(toggleWishlist.pending, (state) => {
-        state.loading = true
-      })
+
+      // TOGGLE
       .addCase(toggleWishlist.fulfilled, (state, action) => {
-        state.loading = false
-        const { productId, isInWishlist } = action.payload
+        state.loading = false;
+        const { productId, isInWishlist } = action.payload;
 
         if (isInWishlist) {
-          // Remover
-          state.items = state.items.filter((id) => id !== productId)
-          console.log(`[wishlistSlice] Removed ${productId} from state`)
+          state.items = state.items.filter((id) => id !== productId);
         } else {
-          // Agregar
-          if (!state.items.includes(productId)) {
-            state.items.push(productId)
-          }
-          console.log(`[wishlistSlice] Added ${productId} to state`)
+          state.items.push(productId);
         }
       })
-      .addCase(toggleWishlist.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
-      })
+
+      // GET LIST ID
+      .addCase(getFavoriteList.fulfilled, (state) => {
+        state.loading = false;
+      });
   },
-})
+});
 
-export const { clearWishlistError } = wishlistSlice.actions
+export const { clearWishlistError } = wishlistSlice.actions;
 
-// Selectors
-export const selectWishlistItems = (state) => state.wishlist.items
-export const selectWishlistLoading = (state) => state.wishlist.loading
-export const selectWishlistError = (state) => state.wishlist.error
-export const selectIsInWishlist = (productId) => (state) => state.wishlist.items.includes(productId)
+export const selectWishlistItems = (state) => state.wishlist.items;
+export const selectIsInWishlist = (id) => (state) =>
+  state.wishlist.items.includes(id);
 
-export default wishlistSlice.reducer
+export default wishlistSlice.reducer;

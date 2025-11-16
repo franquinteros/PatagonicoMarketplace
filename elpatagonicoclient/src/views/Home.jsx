@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { useAppDispatch, useAppSelector } from "../redux/hooks"
-import { fetchCategories } from "../redux/features/CategorySlice"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchCategories } from "../redux/features/categorySlice"
 import { fetchProducts } from "../redux/features/productSlice"
 import mates from "../assets/mates.png"
 
@@ -15,15 +15,15 @@ const EXTERNAL_LINKS = {
 
 const Home = () => {
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
+  const dispatch = useDispatch()
 
-  const { list: categories, loading: categoriesLoading, error: categoriesError } = useAppSelector((state) => state.categories)
-  const { list: products, loading: productsLoading, error: productsError } = useAppSelector((state) => state.products)
+  const { list: categories, loading: categoriesLoading, error: categoriesError } = useSelector((state) => state.categories)
+  const { list: products, loading: productsLoading, error: productsError } = useSelector((state) => state.products)
 
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [loadingFeatured, setLoadingFeatured] = useState(false)
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+  const API_URL = "http://localhost:8080"
 
   useEffect(() => {
     console.log("[v1] Home - Dispatching fetchCategories and fetchProducts")

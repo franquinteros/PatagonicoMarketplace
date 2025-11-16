@@ -2,15 +2,15 @@
 
 import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { useAppDispatch, useAppSelector } from "../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import { logout } from "../redux/features/authSlice"
 import { fetchUserOrders } from "../redux/features/orderSlice"
 
 const Profile = () => {
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
-  const { user, isAuthenticated, loading, token } = useAppSelector((state) => state.auth)
-  const { orders, loading: loadingOrders } = useAppSelector((state) => state.orders)
+  const dispatch = useDispatch()
+  const { user, isAuthenticated, loading, token } = useSelector((state) => state.auth)
+  const { orders, loading: loadingOrders } = useSelector((state) => state.orders)
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {

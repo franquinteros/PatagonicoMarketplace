@@ -2,19 +2,19 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { useAppDispatch, useAppSelector } from "../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import { addToCart } from "../redux/features/cartSlice"
 import { toggleWishlist } from "../redux/features/wishlistSlice"
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+const API_URL = "http://localhost:8080"
 
 const ProductDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
+  const dispatch = useDispatch()
 
-  const { user, token } = useAppSelector((state) => state.auth)
-  const { items: wishlistItems } = useAppSelector((state) => state.wishlist)
+  const { user, token } = useSelector((state) => state.auth)
+  const { items: wishlistItems } = useSelector((state) => state.wishlist)
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -116,7 +116,7 @@ const ProductDetail = () => {
         alert(`${product.name} agregado al carrito`)
       } catch (error) {
         console.error("Error al agregar al carrito:", error)
-        alert("Error al agregar el producto al carrito")
+        alert("Usuario no autenticado. Iniciar sesión")
       }
     }
   }

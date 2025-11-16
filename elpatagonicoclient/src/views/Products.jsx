@@ -1,25 +1,25 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useAppDispatch, useAppSelector } from "../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import { fetchProducts } from "../redux/features/productSlice"
-import { fetchCategories } from "../redux/features/CategorySlice"
+import { fetchCategories } from "../redux/features/categorySlice"
 import ProductList from "../components/product/productlist/ProductList"
 import FilterSidebar from "../components/product/FilterSideBar/FilterSideBar"
 
 const Products = () => {
   const isMounted = useRef(true)
-  const dispatch = useAppDispatch()
+  const dispatch = useDispatch()
 
-  const { list: products, loading: productsLoading, error: productsError } = useAppSelector((state) => state.products)
-  const { list: categories, loading: categoriesLoading, error: categoriesError } = useAppSelector((state) => state.categories)
+  const { list: products, loading: productsLoading, error: productsError } = useSelector((state) => state.products)
+  const { list: categories, loading: categoriesLoading, error: categoriesError } = useSelector((state) => state.categories)
 
   const [displayedProducts, setDisplayedProducts] = useState([])
   const [error, setError] = useState(null)
 
   const [filters, setFilters] = useState({
     selectedCategoryIds: new Set(),
-    priceRange: { max: 69500 },
+    priceRange: { max: 69500 }, //esto está mal
     sortDirection: "asc",
   })
 
@@ -82,7 +82,7 @@ const Products = () => {
             product.category
           
           console.log(`[v2] Product ${product.id} - Category ID:`, productCategoryId, 
-                     'Product category object:', product.category)
+          'Product category object:', product.category)
           
           const hasCategory = filters.selectedCategoryIds.has(productCategoryId)
           console.log(`[v2] Product ${product.id} - Matches: ${hasCategory}`)

@@ -1,17 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+import { useDispatch, useSelector } from "react-redux"
 import { fetchProducts, createProduct, updateProduct, toggleProductActive } from "../../redux/features/productSlice"
-import { fetchCategories } from "../../redux/features/CategorySlice"
+import { fetchCategories } from "../../redux/features/categorySlice"
 import { fetchDiscounts } from "../../redux/features/discountSlice"
 
 const ProductManagement = () => {
-  const dispatch = useAppDispatch()
-  const { user } = useAppSelector((state) => state.auth)
-  const { list: products, loading } = useAppSelector((state) => state.products)
-  const { list: categories } = useAppSelector((state) => state.categories)
-  const { list: discounts } = useAppSelector((state) => state.discounts)
+  const dispatch = useDispatch()
+  const { user } = useSelector((state) => state.auth)
+  const { list: products, loading } = useSelector((state) => state.products)
+  const { list: categories } = useSelector((state) => state.categories)
+  const { list: discounts } = useSelector((state) => state.discounts)
 
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)

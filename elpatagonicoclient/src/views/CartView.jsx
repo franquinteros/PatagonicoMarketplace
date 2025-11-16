@@ -3,16 +3,16 @@
  * CartView sería el componente "lógico" que, usando Redux, renderiza
  */
 import { useNavigate } from "react-router-dom"
-import { useAppSelector, useAppDispatch } from "../redux/hooks"
+import { useSelector, useDispatch } from "react-redux"
 import { removeFromCart, incrementQuantity, decrementQuantity } from "../redux/features/cartSlice"
 import NewCart from "../components/cart/NewCart" // El componente de presentación sigue siendo útil
 
 const CartView = () => {
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
+  const dispatch = useDispatch()
 
-  const { user, loading: authLoading } = useAppSelector((state) => state.auth)
-  const { items: cartItems, totalAmount, loading: cartIsLoading, error } = useAppSelector((state) => state.cart)
+  const { user, loading: authLoading } = useSelector((state) => state.auth)
+  const { items: cartItems, totalAmount, loading: cartIsLoading, error } = useSelector((state) => state.cart)
 
   const isAuthenticated = !!user
 
@@ -37,7 +37,7 @@ const CartView = () => {
             <i className="bi bi-person-lock"></i>
           </div>
           <h2 className="empty-cart-title">Inicia sesión para ver tu carrito</h2>
-          <button onClick={() => navigate("./Login")} className="btn btn-cart-primary">
+          <button onClick={() => navigate("../Login")} className="btn btn-cart-primary">
             <i className="bi bi-box-arrow-in-right me-2"></i>
             Iniciar Sesión
           </button>

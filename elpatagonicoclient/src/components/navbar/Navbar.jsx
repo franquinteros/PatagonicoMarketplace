@@ -3,13 +3,13 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import logo from "../../assets/logo.jpeg"
-import { useAppSelector } from "../../redux/hooks"
+import { useSelector } from "react-redux"
 import "./Navbar.css"
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
-  const { items: cartItems } = useAppSelector((state) => state.cart)
+  const { isAuthenticated, user } = useSelector((state) => state.auth)
+  const { items: cartItems } = useSelector((state) => state.cart)
   const navigate = useNavigate()
 
   // Calcular cantidades

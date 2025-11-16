@@ -1,54 +1,42 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axios from "axios"
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+const API_URL = "http://localhost:8080"
 
 // Async thunks
 export const fetchUserOrders = createAsyncThunk(
   "orders/fetchUserOrders",
-  async ({ userId, token }, { rejectWithValue }) => {
+  async (userId, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch(`${API_URL}/api/orders/user/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      const token = getState().auth.token
+      if (!token) return rejectWithValue("Usuario no autenticado. Iniciar sesión")
+
+      const response = await axios.get(`${API_URL}/api/orders/user/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || "Error al obtener órdenes")
-      }
-
-      const data = await response.json()
-      return data
+      return response.data
     } catch (error) {
-      return rejectWithValue(error.message)
+      return rejectWithValue(error.response.data || error.message)
     }
   },
 )
 
-export const createOrder = createAsyncThunk("orders/createOrder", async ({ orderData, token }, { rejectWithValue }) => {
-  try {
-    const response = await fetch(`${API_URL}/api/orders/checkout`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(orderData),
-    })
+export const createOrder = createAsyncThunk(
+  "orders/createOrder",
+  async (orderData, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth.token
+      if (!token) return rejectWithValue("Usuario no autenticado. Iniciar sesión")
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Error al procesar la orden: ${errorText}`)
+      const response = await axios.post(`${API_URL}/api/orders/checkout`, orderData, {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      })
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response.data || error.message)
     }
-
-    const data = await response.json()
-    return data
-  } catch (error) {
-    return rejectWithValue(error.message)
-  }
-})
+  },
+)
 
 // Slice
 const orderSlice = createSlice({

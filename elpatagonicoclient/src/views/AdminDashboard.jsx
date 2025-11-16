@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAppSelector } from "../redux/hooks"
+import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import ProductManagement from "../components/Admin/ProductManagement"
 import DiscountManagement from "../components/Admin/DiscountManagement"
@@ -10,7 +10,7 @@ import PaymentMethodManagement from "../components/Admin/PaymentMethodManagement
 import DeliveryTypeManagement from "../components/Admin/DeliveryTypeManagement"
 
 const AdminDashboard = () => {
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth)
+  const { user, isAuthenticated } = useSelector((state) => state.auth)
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState("products")
 

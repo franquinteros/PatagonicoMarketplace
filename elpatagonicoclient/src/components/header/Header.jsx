@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import logo from "../../assets/logo.jpeg"
-import { useAppSelector } from "../../redux/hooks"
+import { useSelector } from "react-redux"
 
 const EXTERNAL_LINKS = {
   whatsapp: "https://wa.me/1234567890", // Reemplazar con tu número de WhatsApp
@@ -12,8 +12,8 @@ const EXTERNAL_LINKS = {
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
-  const { items: cartItems } = useAppSelector((state) => state.cart)
+  const { isAuthenticated, user } = useSelector((state) => state.auth)
+  const { items: cartItems } = useSelector((state) => state.cart)
   const navigate = useNavigate()
 
   // Calcular la cantidad total de items en el carrito

@@ -1,71 +1,84 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axios from "axios"
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+const API_URL = "http://localhost:8080"
 
-// Obtener categorías
+// ===================== THUNKS =====================
 export const fetchCategories = createAsyncThunk(
   "categories/fetchCategories",
-  async () => {
-    console.log("[v0] CategorySlice - Fetching categories from:", `${API_URL}/api/categories`)
-    const response = await fetch(`${API_URL}/api/categories`);
-    
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: No se pudieron obtener las categorías`)
-    }
-    
-    const data = await response.json();
-    console.log("[v0] CategorySlice - Raw categories data:", data)
-    
-    // La API de Spring Boot con Page retorna un objeto con la propiedad 'content'
-    if (data && data.content && Array.isArray(data.content)) {
-      console.log("[v0] CategorySlice - Returning content array with", data.content.length, "categories")
-      return data.content
-    } 
-    // Si por alguna razón llega un array directo
-    else if (Array.isArray(data)) {
-      console.log("[v0] CategorySlice - Returning direct array with", data.length, "categories")
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/categories`)
       return data
-    } 
-    // Fallback: retornar array vacío
-    else {
-      console.error("[v0] CategorySlice - Unexpected data structure!")
-      return []
+    } catch (error) {
+      return rejectWithValue(error.message)
     }
   }
-);
+)
 
-// Crear categoría
 export const createCategory = createAsyncThunk(
   "categories/createCategory",
-  async (formData, { getState }) => {
-    const token = getState().auth.token;
+  async (formData, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth.token
 
-    await fetch(`${API_URL}/api/categories`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(formData),
-    });
+      const { data } = await axios.post(
+        `${API_URL}/api/categories`,
+        formData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      return data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message)
+    }
   }
-);
+)
 
-// Eliminar categoría
 export const deleteCategory = createAsyncThunk(
   "categories/deleteCategory",
-  async (id, { getState }) => {
-    const token = getState().auth.token;
+  async (id, { rejectWithValue, getState, dispatch }) => {
+    try {
+      const token = getState().auth.token
+      const products = getState().products.list
 
-    await fetch(`${API_URL}/api/categories/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      // verificamos que la categoría tenga productos
+      const productsInCategory = products.filter((p) => p.categoryId === id)
 
-    return id;
+      // desactivación lógica de los productos que pertenezcan a la categoría
+      if (productsInCategory.length > 0) {
+        const allProductsToToggle = productsInCategory.filter((p) => p.isActive === true)
+
+        // despachamos la acción de desactivar los productos al store
+        const togglePromises = allProductsToToggle.map((product) =>
+          dispatch(
+            toggleProductActive({
+              id: product.id,
+              active: true, // ajustar según la semántica de tu thunk
+            })
+          )
+        )
+
+        // asegurarnos que para todos los productos, las promesas hayan sido FULFILLED
+        await Promise.all(togglePromises)
+
+        return null // salir, pero que el reducer no lo quite de la lista
+      } else {
+        await axios.delete(`${API_URL}/api/categories/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        return id // quitarlo de la lista
+      }
+    } catch (error) {
+      return rejectWithValue(error.message)
+    }
   }
-);
+)
 
+// ===================== SLICE =====================
 const categorySlice = createSlice({
   name: "categories",
   initialState: {
@@ -73,32 +86,38 @@ const categorySlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {
-    clearCategoryError: (state) => {
-      state.error = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchCategories.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.loading = true
+        state.error = null
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.loading = false;
-        state.list = action.payload;
-        state.error = null;
+        state.loading = false
+        state.list = action.payload.content
       })
       .addCase(fetchCategories.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
+        state.loading = false
+        state.error = action.payload
+      })
+      .addCase(createCategory.fulfilled, (state, action) => {
+        state.list.push(action.payload)
+      })
+      .addCase(createCategory.rejected, (state, action) => {
+        state.error = action.payload
       })
       .addCase(deleteCategory.fulfilled, (state, action) => {
-        state.list = state.list.filter((c) => c.id !== action.payload);
-      });
+        // action.payload puede ser null (no eliminar) o id (eliminar)
+        if (action.payload) {
+          state.list = state.list.filter((c) => c.id !== action.payload)
+        }
+      })
+      .addCase(deleteCategory.rejected, (state, action) => {
+        state.error = action.payload
+      })
   },
-});
+})
 
-export const { clearCategoryError } = categorySlice.actions;
-
-export default categorySlice.reducer;
+export const { clearError } = categorySlice.actions
+export default categorySlice.reducer

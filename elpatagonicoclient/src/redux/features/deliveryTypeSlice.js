@@ -1,78 +1,99 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axios from "axios"
 
-const API_URL = "http://localhost:8080/api/deliveryType"
+const API_URL = "http://localhost:8080/api/delivery-types"
 
 // Obtener tipos de envío
-export const fetchDeliveryTypes = createAsyncThunk("deliveryTypes/fetchDeliveryTypes", async () => {
-  const token = localStorage.getItem("token")
-
-  const response = await fetch(API_URL, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`)
+export const fetchDeliveryTypes = createAsyncThunk(
+  "deliveryTypes/fetchDeliveryTypes",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${API_URL}`)
+      return data
+    } catch (error) {
+      // Provide more info when server returns 500
+      const serverMsg = error.response?.data || error.response?.statusText
+      console.error("[deliveryTypeSlice] fetchDeliveryTypes error:", serverMsg, error)
+      return rejectWithValue(error.response?.data || error.message)
+    }
   }
-
-  return await response.json()
-})
+)
 
 // Crear tipo de envío
-export const createDeliveryType = createAsyncThunk("deliveryTypes/createDeliveryType", async (formData) => {
-  const token = localStorage.getItem("token")
+export const createDeliveryType = createAsyncThunk(
+  "deliveryTypes/createDeliveryType",
+  async (formData, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth.token
+      if (!token) return rejectWithValue("Usuario no autenticado. Iniciar sesión")
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(formData),
-  })
+      const response = await axios.request({
+        method: "post",
+        url: `${API_URL}`,
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        data: formData,
+      })
 
-  if (!response.ok) {
-    throw new Error("Error al crear tipo de envío")
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message)
+    }
   }
-
-  return await response.json()
-})
+)
 
 // Actualizar tipo de envío
-export const updateDeliveryType = createAsyncThunk("deliveryTypes/updateDeliveryType", async ({ id, formData }) => {
-  const token = localStorage.getItem("token")
+export const updateDeliveryType = createAsyncThunk(
+  "deliveryTypes/updateDeliveryType",
+  async ({ id, formData }, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth.token
+      if (!token) return rejectWithValue("Usuario no autenticado. Iniciar sesión")
 
-  const response = await fetch(`${API_URL}/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(formData),
-  })
+      const response = await axios.request({
+        method: "put",
+        url: `${API_URL}/${id}`,
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        data: formData,
+      })
 
-  if (!response.ok) {
-    throw new Error("Error al actualizar tipo de envío")
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message)
+    }
   }
-
-  return await response.json()
-})
+)
 
 // Eliminar tipo de envío
-export const deleteDeliveryType = createAsyncThunk("deliveryTypes/deleteDeliveryType", async (id) => {
-  const token = localStorage.getItem("token")
+export const deleteDeliveryType = createAsyncThunk(
+  "deliveryTypes/deleteDeliveryType",
+  async (id, { rejectWithValue, getState }) => {
+    try {
+      const token = getState().auth.token
+      if (!token) return rejectWithValue("Usuario no autenticado. Iniciar sesión")
 
-  await fetch(`${API_URL}/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
+      await axios.request({
+        method: "delete",
+        url: `${API_URL}/${id}`,
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
 
-  return id
-})
+      return id
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message)
+    }
+  }
+)
+
+// ===================== SLICE =====================
 
 const deliveryTypeSlice = createSlice({
   name: "deliveryTypes",
@@ -94,10 +115,45 @@ const deliveryTypeSlice = createSlice({
       })
       .addCase(fetchDeliveryTypes.rejected, (state, action) => {
         state.loading = false
-        state.error = action.error.message
+        state.error = action.payload
+      })
+      .addCase(deleteDeliveryType.pending, (state) => {
+        state.loading = true
+        state.error = null
       })
       .addCase(deleteDeliveryType.fulfilled, (state, action) => {
+        state.loading = false
         state.list = state.list.filter((t) => t.id !== action.payload)
+      })
+      .addCase(deleteDeliveryType.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      .addCase(createDeliveryType.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(createDeliveryType.fulfilled, (state, action) => {
+        state.loading = false
+        state.list = [...state.list, action.payload]
+      })
+      .addCase(createDeliveryType.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      .addCase(updateDeliveryType.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateDeliveryType.fulfilled, (state, action) => {
+        state.loading = false
+        state.list = state.list.map((dt) =>
+          dt.id === action.payload.id ? action.payload : dt
+        )
+      })
+      .addCase(updateDeliveryType.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
       })
   },
 })

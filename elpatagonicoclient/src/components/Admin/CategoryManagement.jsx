@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSelector, useDispatch } from "react-redux"
-import { fetchCategories, createCategory, deleteCategory } from "../../redux/features/CategorySlice";
+import { fetchCategories, createCategory, deleteCategory } from "../../redux/features/categorySlice";
 
 const CategoryManagement = () => {
   const dispatch = useDispatch()

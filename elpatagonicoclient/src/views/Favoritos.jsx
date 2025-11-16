@@ -2,30 +2,29 @@
 
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useAppSelector, useAppDispatch } from "../redux/hooks"
+import { useSelector, useDispatch } from "react-redux"
 import { fetchWishlist } from "../redux/features/wishlistSlice"
 import ProductCard from "../components/product/productcard/ProductCard"
 import AuthModal from "../components/authmodal/AuthModal"
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+const API_URL = "http://localhost:8080"
 
 const Favoritos = () => {
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth)
-  const { items: wishlistItems, loading: isLoadingWishlist } = useAppSelector((state) => state.wishlist)
+  const dispatch = useDispatch()
+  const { user, isAuthenticated } = useSelector((state) => state.auth)
+  const { items: wishlistItems, loading: isLoadingWishlist } = useSelector((state) => state.wishlist)
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(fetchWishlist())
+    if (isAuthenticated && user?.id) {
+      dispatch(fetchWishlist(user.id))
     }
-  }, [isAuthenticated, dispatch])
+  }, [isAuthenticated, user?.id, dispatch])
 
-  // 🧠 Cargar los productos favoritos cuando cambia la wishlist
   useEffect(() => {
     const fetchWishlistProducts = async () => {
       if (!isAuthenticated) {
@@ -45,7 +44,7 @@ const Favoritos = () => {
         setError(null)
 
         const requests = wishlistItems.map(async (item) => {
-          const productId = item.id || item.productId
+          const productId = typeof item === 'number' ? item : (item.id || item.productId)
           const url = `${API_URL}/api/products/search/id/${productId}`
 
           const res = await fetch(url)

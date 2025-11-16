@@ -1,7 +1,6 @@
 import CartItem from "./CartItem";
 import { useNavigate } from "react-router-dom";
 
-
 const NewCart = ({ items, totalAmount, onIncrementQuantity, onDecrementQuantity, onItemRemove }) => {
 
   const navigate = useNavigate();
@@ -57,11 +56,7 @@ const NewCart = ({ items, totalAmount, onIncrementQuantity, onDecrementQuantity,
             </strong>
           </div>
 
-          <button className="btn btn-cart-primary w-100 mb-3"
-          onClick={() =>{
-            navigate("/checkout")
-          }
-          }>
+          <button className="btn btn-cart-primary w-100 mb-3" onClick={() => navigate("/checkout") }>
             <i className="bi bi-credit-card me-2"></i>
             Proceder al pago
           </button>
